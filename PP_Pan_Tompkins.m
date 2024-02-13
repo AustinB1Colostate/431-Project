@@ -39,8 +39,12 @@ title('ECG original');
 %Band Pass Filter 
 
 %- may need to adjust butterworth
-[b,a] = butter(1, [5 15]/(fs/2), 'bandpass'); % 1st order Butterworth band-pass filter
+[b,a] = butter(3, [5 15]/(fs/2), 'bandpass'); % nth order Butterworth band-pass filter
+%adjust the order to get different results.
 filteredECG = filter(b, a, x);
+
+%filter made from filter designer- not as good as the above filter
+% filteredECG = filter(filter_1,x);
 %time plot
 figure(3) 
 subplot(2,2,1)
@@ -133,6 +137,15 @@ title('Marking the QRS complex locations');
 %time plot
 %freq plot
 
+%Heart rate calculation- from first two peaks
+[pkv,locs] = findpeaks(x,'MinPeakHeight',0.6);
+heart_rate_BPM = 60/(t(locs(2))-t(locs(1)));
+%Heart rate from average
+Avg = 0;
+for i = 1:13
+    Avg = Avg + sum(t(locs(i+1))-t(locs(i)))/14;
+end
+HR_AVG = 60/Avg;
 %Peak Detection
 % figure(7)
 % findpeaks(integratedECG,"MinPeakHeight",5e-4);
