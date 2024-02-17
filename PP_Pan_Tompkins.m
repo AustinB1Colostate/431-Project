@@ -25,13 +25,15 @@ ylabel('Signal [mV]');
 title('ECG original');
 
 % %% Looking in frequency domain
-% x_f = fftshift(fft(x));
-% df = 1/T; % frequency resolution
-% f = ((1:n)-1)*df; % start at DC, go up to fs
-% figure(2)
-% plot(f,abs(x_f)); set(gca,'yscale','log')
-% xlim([0,fs/2]) % plot up to Nyquist
-% xlabel('freq, Hz')
+x_f = fftshift(fft(x));
+df = 1/(n*dt); % frequency resolution
+f = ((1:n)-1-n/2)*df;
+figure(2)
+plot(f,abs(x_f)); %set(gca,'yscale','log')
+xlim([-fs/2,fs/2]) % plot up to Nyquist
+xlabel('freq, Hz');
+ylabel('Magnitude of FFT Coeffifients [mV/Hz]');
+title('Frequency domain of unfiltered signal')
 
 
 %% Start of Pan-Tompkins 
@@ -114,7 +116,7 @@ hold on
 % plot(t,100*x_thr, 'linewidth',3)
 plot(t,x_thr,'linewidth',2)
 hold off;
-xlim([0,4])
+xlim([0,2.5])
 title('Threshold shown');
 
 
@@ -142,14 +144,52 @@ title('Marking the QRS complex locations');
 heart_rate_BPM = 60/(t(locs(2))-t(locs(1)));
 %Heart rate from average
 Avg = 0;
-for i = 1:13
-    Avg = Avg + sum(t(locs(i+1))-t(locs(i)))/14;
+for i = 1:length(locs)-1
+    Avg = Avg + sum(t(locs(i+1))-t(locs(i)))/length(locs);
 end
 HR_AVG = 60/Avg;
-%Peak Detection
-% figure(7)
-% findpeaks(integratedECG,"MinPeakHeight",5e-4);
-% [~,locs] = findpeaks(double(peaks),'MinPeakDistance',round(0.2*fs));
-%QRS Detection
-%time plot
-%freq plot
+
+%% Prelim dianosis based on features and report
+% If HR> 100 then Tachycardia
+if HR_AVG < 60
+    disp('This patient may have Bradycardia');
+% If HR<60 then Bradycardia
+elseif HR_AVG > 100
+    disp('This patient may have Tachycardia');
+else
+    disp('The average heart rate did not flag for Bradycaria or Tachycardia');
+end
+
+% QRS Detection
+[qrs_peaks, qrs_locs] = findpeaks(integratedECG, 'MinPeakHeight', thr, 'MinPeakDistance', round(0.2*fs));
+%figure %to check the QRS peaks were found
+%findpeaks(integratedECG, 'MinPeakHeight', thr, 'MinPeakDistance', round(0.2*fs));
+% Calculating RR intervals
+RR_intervals = diff(qrs_locs) / fs; % Convert indices to time in seconds
+
+% Checking for second degree AV block, If R-R is much longer than the avg
+% then there is suspision for 2nd AV block
+%average R-R
+Avg_RR = mean(RR_intervals);
+second_degree_AV_block = any(RR_intervals > Avg_RR * 1.40); % Threshold is randomly picked, may need adjustment
+% Flagging for Second degree AV block
+if second_degree_AV_block ~= 0
+    disp('A potential second degree AV block was detected');
+else
+    disp('No second degree AV block was detected');
+end
+
+%Detecting first degree AV block
+% This is done by using p wave detection
+% add in code for p wave detection
+
+%complete heart block Asystole
+% Look for an absence of QRS for a significant duration, which might indicate Asystole or Complete Heart Block.
+%threshold is arbitruary and will need to be adjusted for accuracy
+asystole_threshold = 1; % seconds without a QRS complex
+complete_heart_block = any(RR_intervals > asystole_threshold);
+if complete_heart_block ~=0
+    disp('Potential Asystole Detected');
+else
+    disp("No Asystole Detected");
+end
