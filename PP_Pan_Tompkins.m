@@ -4,22 +4,33 @@ close all;
 clear;
 %% Load in the signal data
 % Started working with the ecgiddb_person database
-load('ecgiddb_person01_rec10m.mat'); % load data
-whos
-type('ecgiddb_person01_rec10m.info');
+% load('ecgiddb_person01_rec10m.mat'); % load data
+% whos
+% type('ecgiddb_person01_rec10m.info');
+% load('609_data.mat');
+% whos
+% type('609_info');
+% data = readtable('609_samples_test.csv');
+% secondcoldata = data{:,2};
+% n = length(secondcoldata);    % get no. of samples
+%For CU database
+data = readtable('VFandNormalEx.csv');
+secondcoldata = data{:,2};
+%secondcoldata = secondcoldata(8587:end,1); %This is for VF
+secondcoldata = secondcoldata(1:8587,1); %This is for Normal
 
-n = length(val);    % get no. of samples
-dt = 0.002; % sampling interval sec
+n = length(secondcoldata);
+dt = 1/250; % sampling interval sec
 fs = 1/dt; %sample rate in Hz
 T = n*dt ; %sampling window in seconds
-t=(1:n)/500;        % time sampling vector
-x = val / 200;      % scaled to mV
+t=(1:n)/250;        % time sampling vector
+x = secondcoldata / 1;      % scaled to mV
 rng('default');     % seed random number generator for repeatability
 
 %Plot the original signal
 figure (1);
 plot(t,x);
-xlim([0,2.5])  
+xlim([0,30])  
 xlabel('Time [sec]');
 ylabel('Signal [mV]');
 title('ECG original');
@@ -32,7 +43,7 @@ figure(2)
 plot(f,abs(x_f)); %set(gca,'yscale','log')
 xlim([-fs/2,fs/2]) % plot up to Nyquist
 xlabel('freq, Hz');
-ylabel('Magnitude of FFT Coeffifients [mV/Hz]');
+ylabel('Magnitude of FFT Coeffifients [mV]');
 title('Frequency domain of unfiltered signal')
 
 
@@ -150,14 +161,18 @@ end
 HR_AVG = 60/Avg;
 
 %% Prelim dianosis based on features and report
+% Looking for Ventricular fibrillation
+%If HR >200 then Vectricular fibrillation
+if HR_AVG > 200
+    disp('This patient was experiencing Ventricular fibrillation')
 % If HR> 100 then Tachycardia
-if HR_AVG < 60
+elseif HR_AVG < 60
     disp('This patient may have Bradycardia');
 % If HR<60 then Bradycardia
-elseif HR_AVG > 100
+elseif HR_AVG > 100 && HR_AVG < 200
     disp('This patient may have Tachycardia');
 else
-    disp('The average heart rate did not flag for Bradycaria or Tachycardia');
+    disp('The average heart rate did not flag for Bradycaria or Tachycardia or Ventricular fibrillation');
 end
 
 % QRS Detection
@@ -177,6 +192,7 @@ if second_degree_AV_block ~= 0
     disp('A potential second degree AV block was detected');
 else
     disp('No second degree AV block was detected');
+  
 end
 
 %Detecting first degree AV block
@@ -186,10 +202,41 @@ end
 %complete heart block Asystole
 % Look for an absence of QRS for a significant duration, which might indicate Asystole or Complete Heart Block.
 %threshold is arbitruary and will need to be adjusted for accuracy
-asystole_threshold = 1; % seconds without a QRS complex
+asystole_threshold = 1.5; % seconds without a QRS complex
 complete_heart_block = any(RR_intervals > asystole_threshold);
 if complete_heart_block ~=0
     disp('Potential Asystole Detected');
 else
     disp("No Asystole Detected");
+  
 end
+% %Classifying the data into a nice table
+% Convert from indices to time
+qrs_times = qrs_locs/ fs;
+%Get amplitudes of peaks
+qrs_amplitudes = x(qrs_locs);
+ % Initialize column for marking irregular QRS complexes
+qrs_irregular = zeros(length(qrs_locs), 1);
+R2R = zeros(length(qrs_locs),1);
+% calculate individual heart rates or r-r times
+for i = 1:length(qrs_times)-1
+    current_hr = 60 /(qrs_times(i+1)-qrs_times(i));
+    R2R(i) = qrs_times(i+1)-qrs_times(i);
+    if R2R(i) < 0.45
+        qrs_irregular(i) = 1; %Marks for Ventricular fribrilation
+    else
+        qrs_irregular(i) = 0;
+    end
+end
+% % Create a table with the required columns
+QRS_Table = table(qrs_times(1:end-1), qrs_amplitudes(1:end-1), qrs_irregular(1:end-1),R2R(1:end-1),...
+                   'VariableNames', {'TimeOfRPeak', 'AmplitudeOfPeak', 'IsIrregular','R-R Interval'});
+% 
+% % Display the table
+ disp(QRS_Table);
+% 
+% % Optionally, save the table to a CSV file for further use
+% writetable(QRS_Table, 'QRS_Data.csv');
+
+
+
