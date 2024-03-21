@@ -1,3 +1,4 @@
+%%Pan Tompkins Function
 function [QRS_Table] = pantompkins(ecgfilename,fs,dt)
     data = readtable(ecgfilename);
     secondcoldata = data{:,2};
