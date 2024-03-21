@@ -16,11 +16,11 @@ ECG_test_table = table();
 %seconds after showing the arrhythemia
 %Example is patient 419, who had ventricular flutter
 %Load Data
-load('419m_test.mat');
+load('419m.mat');
 type('419m.info');
 
 %Read Annotations and get times
-annotations = readcell("anno_flut_419_test.txt",'ExpectedNumVariables',8);
+annotations = readcell("anno_flut_419.txt",'ExpectedNumVariables',8);
 secondcoldata = val(1,:);
 gain = 200;
 

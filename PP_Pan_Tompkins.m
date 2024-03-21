@@ -28,12 +28,12 @@ x = secondcoldata / 1;      % scaled to mV
 rng('default');     % seed random number generator for repeatability
 
 %Plot the original signal
-figure (1);
-plot(t,x);
-xlim([0,30])  
-xlabel('Time [sec]');
-ylabel('Signal [mV]');
-title('ECG original');
+% figure (1);
+% plot(t,x);
+% xlim([0,30])  
+% xlabel('Time [sec]');
+% ylabel('Signal [mV]');
+% title('ECG original');
 
 % %% Looking in frequency domain
 x_f = fftshift(fft(x));
@@ -59,15 +59,15 @@ filteredECG = filter(b, a, x);
 %filter made from filter designer- not as good as the above filter
 % filteredECG = filter(filter_1,x);
 %time plot
-figure(3) 
-subplot(2,2,1)
+figure(1) 
+subplot(2,3,1)
 plot(t,filteredECG)
 title('ECG Filtered')
 xlabel('Time [sec]');
 ylabel('Signal [mV]');
 xlim([0,2.5]); 
 ylim([-0.4,0.8]);
-subplot(2,2,2);
+subplot(2,3,2);
 plot(t,x);
 title('ECG Original')
 xlabel('Time [sec]');
@@ -81,7 +81,7 @@ b_derv = [1, 0 ,-1];
 diffECG = conv(filteredECG, b_derv,'same');
 % diffECG = diff(filteredECG);
 %time plot
-subplot(2,2,3);
+subplot(2,3,3);
 plot(t,filteredECG,t,diffECG);
 legend('Filtered ECG','Derivative');
 title('ECG After Derivation');
@@ -94,7 +94,7 @@ ylim([-0.4,0.8]);
 %Squaring
 squaredECG = diffECG.^2;
 %time plot
-subplot(2,2,4);
+subplot(2,3,5);
 plot(squaredECG);
 title('Squared Signal')
 xlim([0 5000]);
@@ -108,7 +108,7 @@ integratedECG = conv(squaredECG,b_int,'same');
 
 
 %time plot
-figure(4)
+subplot(2,3,4);
 plot(t,integratedECG);
 title('Integrated ECG Signal');
 xlabel('Time [sec]');
@@ -119,6 +119,7 @@ xlim([0, 2.5]);
 %% threshold- Need to work on here down
 
 figure(2)
+subplot(2,2,1);
 % thr = 8e5;
 thr = 0.025;
 x_thr = integratedECG > thr; %Grabbing values above threshhold
@@ -134,11 +135,11 @@ title('Threshold shown');
 
 %% locate rising edge of thresholded signal - not sure if this plot helps
 x_thr_d = conv(x_thr,[1,-1],'same') > 0;
-figure (6)
+subplot(2,2,2);
 stem(x_thr_d)
 title('Showing rising edge of threshhold signal')
 %% plot together
-figure(8)
+subplot(2,2,3);
 plot(t,x);
 hold on;
 plot(t,x_thr_d,'linewidth',2)
@@ -237,6 +238,5 @@ QRS_Table = table(qrs_times(1:end-1), qrs_amplitudes(1:end-1), qrs_irregular(1:e
 % 
 % % Optionally, save the table to a CSV file for further use
 % writetable(QRS_Table, 'QRS_Data.csv');
-
 
 
